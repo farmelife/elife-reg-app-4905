@@ -231,10 +231,17 @@ const RegistrationsManagement = ({
   });
 
   const handleStatusUpdate = (id: string, status: ApplicationStatus) => {
-    console.log('Handle status update called:', id, status, 'canWrite:', permissions.canWrite);
+    console.log('=== APPROVAL DEBUG ===');
+    console.log('Handle status update called for id:', id, 'status:', status);
+    console.log('Current permissions:', permissions);
+    console.log('canWrite permission:', permissions.canWrite);
+    console.log('======================');
+    
     if (permissions.canWrite) {
+      console.log('Permission granted, calling mutation...');
       updateStatusMutation.mutate({ id, status });
     } else {
+      console.log('Permission denied!');
       toast({
         title: "Permission Denied",
         description: "You don't have permission to update registrations.",
