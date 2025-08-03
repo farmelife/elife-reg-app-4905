@@ -150,6 +150,13 @@ const RegistrationsManagement = ({
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: UpdateStatusParams) => {
       console.log('Updating status for registration:', id, 'to:', status);
+      
+      // Validate ID before proceeding
+      if (!id || typeof id !== 'string' || id.trim() === '') {
+        console.error('Invalid registration ID:', id);
+        throw new Error('Invalid registration ID provided');
+      }
+      
       const updateData: any = {
         status,
         updated_at: new Date().toISOString()
@@ -174,12 +181,21 @@ const RegistrationsManagement = ({
         updateData.approved_date = null;
       }
       
-      const { error } = await supabase.from('registrations').update(updateData).eq('id', id);
+      console.log('About to update with data:', updateData, 'for ID:', id);
+      
+      const { data, error } = await supabase
+        .from('registrations')
+        .update(updateData)
+        .eq('id', id)
+        .select();
+      
       if (error) {
         console.error('Error updating status:', error);
         throw error;
       }
-      console.log('Status updated successfully');
+      
+      console.log('Status updated successfully, returned data:', data);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
