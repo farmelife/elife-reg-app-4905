@@ -157,75 +157,53 @@ const RegistrationsManagement = ({
         throw new Error('Invalid registration ID provided');
       }
       
-      // Different approach for approved vs other statuses
+      // Single update approach for all status changes
+      const updateData: any = {
+        status,
+        updated_at: new Date().toISOString()
+      };
+      
+      // Add approval fields when status is approved
       if (status === 'approved') {
-        console.log('Processing approval with special handling...');
+        console.log('Processing approval for registration ID:', id);
         
         // Get current admin session
         const adminSession = localStorage.getItem('adminSession');
         const approvedBy = adminSession ? JSON.parse(adminSession).username : 'system';
         
-        // First update the basic status
-        const { error: statusError } = await supabase
-          .from('registrations')
-          .update({
-            status: 'approved',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', id);
-          
-        if (statusError) {
-          console.error('Error updating status to approved:', statusError);
-          throw statusError;
-        }
+        updateData.approved_date = new Date().toISOString();
+        updateData.approved_by = approvedBy;
         
-        // Then update the approval details
-        const { data, error: approvalError } = await supabase
-          .from('registrations')
-          .update({
-            approved_date: new Date().toISOString(),
-            approved_by: approvedBy
-          })
-          .eq('id', id)
-          .select();
-          
-        if (approvalError) {
-          console.error('Error updating approval details:', approvalError);
-          throw approvalError;
-        }
-        
-        console.log('Approval completed successfully:', data);
-        return data;
-        
-      } else {
-        // Handle non-approval statuses normally
-        const updateData: any = {
-          status,
-          updated_at: new Date().toISOString()
-        };
-        
-        // Clear approved_by and approved_date for pending/rejected
-        if (status === 'pending' || status === 'rejected') {
-          updateData.approved_by = null;
-          updateData.approved_date = null;
-        }
-        
-        console.log('About to update with data:', updateData, 'for ID:', id);
-        
-        const { data, error } = await supabase
-          .from('registrations')
-          .update(updateData)
-          .eq('id', id)
-          .select();
-        
-        if (error) {
-          console.error('Error updating status:', error);
-          throw error;
-        }
-        
-        console.log('Status updated successfully:', data);
-        return data;
+        console.log('Update data for approval:', updateData);
       }
+      
+      // Clear approval fields for pending/rejected
+      if (status === 'pending' || status === 'rejected') {
+        updateData.approved_by = null;
+        updateData.approved_date = null;
+      }
+      
+      console.log('About to execute update with data:', updateData, 'for ID:', id);
+      
+      const { data, error } = await supabase
+        .from('registrations')
+        .update(updateData)
+        .eq('id', id)
+        .select();
+      
+      if (error) {
+        console.error('Supabase update error:', {
+          error,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
+      
+      console.log('Update completed successfully:', data);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({

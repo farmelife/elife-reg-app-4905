@@ -27,7 +27,8 @@ const RegistrationsTableActions: React.FC<RegistrationsTableActionsProps> = ({
   };
 
   const handleApprove = () => {
-    console.log('Approve button clicked for registration:', registration.id);
+    console.log('Approve button clicked for registration:', registration.id, 'Name:', registration.name, 'Phone:', registration.mobile_number);
+    console.log('Registration object:', registration);
     onStatusUpdate(registration.id, 'approved');
   };
 
