@@ -39,6 +39,13 @@ const ApprovalDialog: React.FC<ApprovalDialogProps> = ({
     if (!registration) return;
     
     const fee = parseFloat(feeCollected) || 0;
+    console.log('=== APPROVAL DEBUG ===');
+    console.log('Registration ID:', registration.id);
+    console.log('Fee collected:', fee, typeof fee);
+    console.log('Remarks:', remarks);
+    console.log('Registration data:', registration);
+    console.log('=====================');
+    
     onApprove(registration.id, fee, remarks || undefined);
   };
 

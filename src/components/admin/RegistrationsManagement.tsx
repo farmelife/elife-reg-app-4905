@@ -272,9 +272,16 @@ const RegistrationsManagement = ({
       feeCollected: number; 
       remarks?: string 
     }) => {
+      console.log('=== APPROVE MUTATION START ===');
+      console.log('Registration ID:', registrationId);
+      console.log('Fee collected:', feeCollected, typeof feeCollected);
+      console.log('Remarks:', remarks);
+      
       const adminSession = localStorage.getItem('adminSession');
       const adminUsername = adminSession ? JSON.parse(adminSession).username : 'admin';
+      console.log('Admin username:', adminUsername);
 
+      console.log('Calling approve_registration RPC function...');
       const { data, error } = await supabase.rpc('approve_registration', {
         p_registration_id: registrationId,
         p_admin_username: adminUsername,
@@ -282,13 +289,28 @@ const RegistrationsManagement = ({
         p_remarks: remarks
       });
 
-      if (error) throw error;
+      console.log('RPC Response - Data:', data);
+      console.log('RPC Response - Error:', error);
+
+      if (error) {
+        console.error('RPC Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
       
       const result = data as any;
+      console.log('Result object:', result);
+      
       if (!result.success) {
+        console.error('Function returned failure:', result.error);
         throw new Error(result.error || 'Approval failed');
       }
       
+      console.log('=== APPROVE MUTATION SUCCESS ===');
       return data;
     },
     onSuccess: () => {
@@ -301,7 +323,10 @@ const RegistrationsManagement = ({
       setRegistrationForApproval(null);
     },
     onError: (error) => {
-      console.error('Approval failed:', error);
+      console.error('=== APPROVE MUTATION FAILED ===');
+      console.error('Error object:', error);
+      console.error('Error message:', error.message);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       toast({
         title: "Approval Failed",
         description: error.message || "Failed to approve registration.",
