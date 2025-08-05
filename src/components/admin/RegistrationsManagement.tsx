@@ -149,12 +149,15 @@ const RegistrationsManagement = ({
   // Update status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: UpdateStatusParams) => {
-      console.log('Updating status for registration:', id, 'to:', status);
+      console.log('=== MUTATION DEBUG START ===');
+      console.log('ID passed to Supabase:', id, typeof id);
+      console.log('Status:', status);
+      console.log('ID validation - truthy:', !!id, 'string:', typeof id === 'string', 'not empty:', id?.trim() !== '');
       
-      // Validate ID before proceeding
+      // Defensive ID validation
       if (!id || typeof id !== 'string' || id.trim() === '') {
-        console.error('Invalid registration ID:', id);
-        throw new Error('Invalid registration ID provided');
+        console.error('Invalid registration ID detected:', id);
+        throw new Error(`Invalid registration ID provided: "${id}"`);
       }
       
       // Single update approach for all status changes
@@ -188,7 +191,7 @@ const RegistrationsManagement = ({
       const { data, error } = await supabase
         .from('registrations')
         .update(updateData)
-        .eq('id', id)
+        .match({ id })
         .select()
         .single();
       
