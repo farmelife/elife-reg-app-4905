@@ -189,7 +189,8 @@ const RegistrationsManagement = ({
         .from('registrations')
         .update(updateData)
         .eq('id', id)
-        .select();
+        .select()
+        .single();
       
       if (error) {
         console.error('Supabase update error:', {
