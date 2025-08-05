@@ -51,42 +51,37 @@ const AccountsManagement: React.FC<AccountsManagementProps> = ({
   }, []);
   const loadCashSummary = async () => {
     try {
-      // Calculate cash in hand from approved registrations
-      const {
-        data: registrations,
-        error: regError
-      } = await supabase.from('registrations').select('fee_paid').eq('status', 'approved').not('fee_paid', 'is', null);
-      if (regError) throw regError;
-      const totalCollected = registrations?.reduce((sum, reg) => sum + (reg.fee_paid || 0), 0) || 0;
-      setTotalCollected(totalCollected);
+      // Get total fees collected using the new approval system
+      const { data: totalFeesData, error: feesError } = await supabase.rpc('get_total_fees_collected');
+      if (feesError) throw feesError;
+      const totalCollectedFromApprovals = totalFeesData || 0;
+      setTotalCollected(totalCollectedFromApprovals);
 
-      // Get cash transfers
-      const {
-        data: transfers,
-        error: transferError
-      } = await supabase.from('cash_transactions').select('amount').eq('transaction_type', 'cash_transfer');
-      if (transferError) throw transferError;
-      const totalTransferred = transfers?.reduce((sum, transfer) => sum + transfer.amount, 0) || 0;
+      // Get current cash summary from the cash_summary table
+      const { data: cashSummaryData, error: cashError } = await supabase
+        .from('cash_summary')
+        .select('*')
+        .single();
+      
+      if (cashError && cashError.code !== 'PGRST116') { // PGRST116 is "not found"
+        throw cashError;
+      }
 
-      // Get cash expenses
-      const {
-        data: expenses,
-        error: expenseError
-      } = await supabase.from('expenses').select('amount').eq('payment_method', 'cash');
-      if (expenseError) throw expenseError;
-      const totalCashExpenses = expenses?.reduce((sum, expense) => sum + expense.amount, 0) || 0;
-
-      // Get bank expenses
-      const {
-        data: bankExpenses,
-        error: bankExpenseError
-      } = await supabase.from('expenses').select('amount').eq('payment_method', 'bank');
-      if (bankExpenseError) throw bankExpenseError;
-      const totalBankExpenses = bankExpenses?.reduce((sum, expense) => sum + expense.amount, 0) || 0;
-      setCashSummary({
-        cash_in_hand: totalCollected - totalTransferred - totalCashExpenses,
-        cash_at_bank: totalTransferred - totalBankExpenses
-      });
+      // If no cash summary exists, initialize it
+      if (!cashSummaryData) {
+        const { error: insertError } = await supabase
+          .from('cash_summary')
+          .insert({ cash_in_hand: 0, cash_at_bank: 0 });
+        
+        if (insertError) throw insertError;
+        
+        setCashSummary({ cash_in_hand: 0, cash_at_bank: 0 });
+      } else {
+        setCashSummary({
+          cash_in_hand: cashSummaryData.cash_in_hand,
+          cash_at_bank: cashSummaryData.cash_at_bank
+        });
+      }
     } catch (error) {
       console.error('Error loading cash summary:', error);
       toast({

@@ -7,6 +7,7 @@ import RegistrationEditDialog from './RegistrationEditDialog';
 import RegistrationsFilters from './registrations/RegistrationsFilters';
 import RegistrationsTableHeader from './registrations/RegistrationsTableHeader';
 import RegistrationsTableActions from './registrations/RegistrationsTableActions';
+import ApprovalDialog from './registrations/ApprovalDialog';
 import { getCategoryColor, getStatusBadge } from './registrations/utils';
 import { exportToExcel, exportToPDF } from './registrations/exportUtils';
 import { 
@@ -34,6 +35,8 @@ const RegistrationsManagement = ({
   const [fromDate, setFromDate] = useState<Date | undefined>();
   const [toDate, setToDate] = useState<Date | undefined>();
   const [expiryDaysFilter, setExpiryDaysFilter] = useState<number | null>(null);
+  const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
+  const [registrationForApproval, setRegistrationForApproval] = useState<Registration | null>(null);
 
   console.log('RegistrationsManagement permissions:', permissions);
 
@@ -258,6 +261,101 @@ const RegistrationsManagement = ({
     }
   });
 
+  // Approval mutation using the new database function
+  const approveMutation = useMutation({
+    mutationFn: async ({ 
+      registrationId, 
+      feeCollected, 
+      remarks 
+    }: { 
+      registrationId: string; 
+      feeCollected: number; 
+      remarks?: string 
+    }) => {
+      const adminSession = localStorage.getItem('adminSession');
+      const adminUsername = adminSession ? JSON.parse(adminSession).username : 'admin';
+
+      const { data, error } = await supabase.rpc('approve_registration', {
+        p_registration_id: registrationId,
+        p_admin_username: adminUsername,
+        p_fee_collected: feeCollected,
+        p_remarks: remarks
+      });
+
+      if (error) throw error;
+      
+      const result = data as any;
+      if (!result.success) {
+        throw new Error(result.error || 'Approval failed');
+      }
+      
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-registrations'] });
+      toast({
+        title: "Registration Approved",
+        description: "Registration has been approved and cash updated successfully."
+      });
+      setIsApprovalDialogOpen(false);
+      setRegistrationForApproval(null);
+    },
+    onError: (error) => {
+      console.error('Approval failed:', error);
+      toast({
+        title: "Approval Failed",
+        description: error.message || "Failed to approve registration.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Rejection mutation using the new database function
+  const rejectMutation = useMutation({
+    mutationFn: async ({ 
+      registrationId, 
+      remarks 
+    }: { 
+      registrationId: string; 
+      remarks?: string 
+    }) => {
+      const adminSession = localStorage.getItem('adminSession');
+      const adminUsername = adminSession ? JSON.parse(adminSession).username : 'admin';
+
+      const { data, error } = await supabase.rpc('reject_registration', {
+        p_registration_id: registrationId,
+        p_admin_username: adminUsername,
+        p_remarks: remarks
+      });
+
+      if (error) throw error;
+      
+      const result = data as any;
+      if (!result.success) {
+        throw new Error(result.error || 'Rejection failed');
+      }
+      
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-registrations'] });
+      toast({
+        title: "Registration Rejected",
+        description: "Registration has been rejected successfully."
+      });
+      setIsApprovalDialogOpen(false);
+      setRegistrationForApproval(null);
+    },
+    onError: (error) => {
+      console.error('Rejection failed:', error);
+      toast({
+        title: "Rejection Failed",
+        description: error.message || "Failed to reject registration.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleStatusUpdate = (id: string, status: ApplicationStatus) => {
     console.log('=== APPROVAL DEBUG ===');
     console.log('Handle status update called for id:', id, 'status:', status);
@@ -296,6 +394,37 @@ const RegistrationsManagement = ({
   const handleEdit = (registration: Registration) => {
     setEditingRegistration(registration);
     setIsEditDialogOpen(true);
+  };
+
+  const handleApprovalAction = (registration: Registration) => {
+    setRegistrationForApproval(registration);
+    setIsApprovalDialogOpen(true);
+  };
+
+  const handleApprove = (registrationId: string, feeCollected: number, remarks?: string) => {
+    if (!permissions.canWrite) {
+      toast({
+        title: "Permission Denied",
+        description: "You don't have permission to approve registrations.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    approveMutation.mutate({ registrationId, feeCollected, remarks });
+  };
+
+  const handleReject = (registrationId: string, remarks?: string) => {
+    if (!permissions.canWrite) {
+      toast({
+        title: "Permission Denied",
+        description: "You don't have permission to reject registrations.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    rejectMutation.mutate({ registrationId, remarks });
   };
 
   const handleEditUpdate = () => {
@@ -607,13 +736,14 @@ const RegistrationsManagement = ({
                     ) : '-'}
                   </td>
                   <td className="border border-gray-200 px-2 md:px-4 py-2">
-                    <RegistrationsTableActions
-                      registration={registration}
-                      permissions={permissions}
-                      onStatusUpdate={handleStatusUpdate}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                    />
+                     <RegistrationsTableActions
+                       registration={registration}
+                       permissions={permissions}
+                       onStatusUpdate={handleStatusUpdate}
+                       onEdit={handleEdit}
+                       onDelete={handleDelete}
+                       onApprovalAction={handleApprovalAction}
+                     />
                   </td>
                 </tr>
               ))}
@@ -633,12 +763,24 @@ const RegistrationsManagement = ({
           </div>
         )}
 
-        <RegistrationEditDialog
-          isOpen={isEditDialogOpen}
-          onClose={() => setIsEditDialogOpen(false)}
-          registration={editingRegistration}
-          onUpdate={handleEditUpdate}
-        />
+         <RegistrationEditDialog
+           isOpen={isEditDialogOpen}
+           onClose={() => setIsEditDialogOpen(false)}
+           registration={editingRegistration}
+           onUpdate={handleEditUpdate}
+         />
+
+         <ApprovalDialog
+           registration={registrationForApproval}
+           isOpen={isApprovalDialogOpen}
+           onClose={() => {
+             setIsApprovalDialogOpen(false);
+             setRegistrationForApproval(null);
+           }}
+           onApprove={handleApprove}
+           onReject={handleReject}
+           isLoading={approveMutation.isPending || rejectMutation.isPending}
+         />
       </CardContent>
     </Card>
   );
