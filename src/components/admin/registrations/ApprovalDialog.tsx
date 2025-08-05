@@ -27,6 +27,14 @@ const ApprovalDialog: React.FC<ApprovalDialogProps> = ({
   const [feeCollected, setFeeCollected] = useState('');
   const [remarks, setRemarks] = useState('');
 
+  // Set default fee when registration changes
+  React.useEffect(() => {
+    if (registration && isOpen) {
+      const defaultFee = registration.categories?.offer_fee || 0;
+      setFeeCollected(defaultFee.toString());
+    }
+  }, [registration, isOpen]);
+
   const handleApprove = () => {
     if (!registration) return;
     
@@ -74,15 +82,35 @@ const ApprovalDialog: React.FC<ApprovalDialogProps> = ({
           <div className="space-y-3">
             <div>
               <Label htmlFor="fee">Fee Collected (₹)</Label>
-              <Input
-                id="fee"
-                type="number"
-                min="0"
-                step="0.01"
-                value={feeCollected}
-                onChange={(e) => setFeeCollected(e.target.value)}
-                placeholder="Enter collected fee amount"
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="fee"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={feeCollected}
+                  onChange={(e) => setFeeCollected(e.target.value)}
+                  placeholder="Enter collected fee amount"
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const defaultFee = registration?.categories?.offer_fee || 0;
+                    setFeeCollected(defaultFee.toString());
+                  }}
+                  className="px-3"
+                >
+                  Reset
+                </Button>
+              </div>
+              {registration?.categories?.offer_fee && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Default: ₹{registration.categories.offer_fee}
+                </p>
+              )}
             </div>
 
             <div>

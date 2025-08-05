@@ -20,6 +20,8 @@ export interface Registration {
   preference: string | null;
   categories: {
     name: string;
+    offer_fee: number;
+    actual_fee: number;
   } | null;
   panchayaths: {
     name: string;

@@ -60,7 +60,7 @@ const RegistrationsManagement = ({
       console.log('Fetching registrations...');
       let query = supabase.from('registrations').select(`
           *,
-          categories (name),
+          categories (name, offer_fee, actual_fee),
           panchayaths (name, district)
         `).order('created_at', {
         ascending: false
