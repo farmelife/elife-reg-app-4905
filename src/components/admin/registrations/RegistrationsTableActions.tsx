@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, Edit } from 'lucide-react';
+import { Edit } from 'lucide-react';
 import { Registration, ApplicationStatus, RegistrationsPermissions } from './types';
 
 interface RegistrationsTableActionsProps {
@@ -26,21 +26,6 @@ const RegistrationsTableActions: React.FC<RegistrationsTableActionsProps> = ({
     onEdit(registration);
   };
 
-  const handleApprove = () => {
-    console.log('=== ACTIONS COMPONENT DEBUG ===');
-    console.log('Approve button clicked for registration ID:', registration.id);
-    console.log('Registration object:', registration);
-    console.log('ID type:', typeof registration.id);
-    console.log('ID truthy:', !!registration.id);
-    console.log('ID trimmed length:', registration.id?.toString().trim().length);
-    console.log('================================');
-    onStatusUpdate(registration.id, 'approved');
-  };
-
-  const handleReject = () => {
-    console.log('Reject button clicked for registration:', registration.id);
-    onStatusUpdate(registration.id, 'rejected');
-  };
 
   const handleDelete = () => {
     console.log('Delete button clicked for registration:', registration.id);
@@ -57,24 +42,6 @@ const RegistrationsTableActions: React.FC<RegistrationsTableActionsProps> = ({
         >
           <Edit className="h-3 w-3" />
         </Button>
-      )}
-      {permissions.canWrite && registration.status === 'pending' && (
-        <>
-          <Button
-            size="sm"
-            onClick={handleApprove}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            <CheckCircle className="h-3 w-3" />
-          </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={handleReject}
-          >
-            <XCircle className="h-3 w-3" />
-          </Button>
-        </>
       )}
       {permissions.canDelete && (
         <Button
