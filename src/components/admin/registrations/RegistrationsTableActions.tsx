@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Edit } from 'lucide-react';
@@ -25,7 +24,6 @@ const RegistrationsTableActions: React.FC<RegistrationsTableActionsProps> = ({
     console.log('Edit button clicked for registration:', registration.id);
     onEdit(registration);
   };
-
 
   const handleDelete = () => {
     console.log('Delete button clicked for registration:', registration.id);
