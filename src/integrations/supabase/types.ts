@@ -115,6 +115,125 @@ export type Database = {
         }
         Relationships: []
       }
+      applications: {
+        Row: {
+          address: string
+          agent_pro: string | null
+          approved_by: string | null
+          approved_date: string | null
+          category_id: string
+          created_at: string
+          customer_id: string
+          fee_paid: number | null
+          id: string
+          mobile_number: string
+          name: string
+          panchayath_id: string | null
+          preference: string | null
+          status: Database["public"]["Enums"]["application_status"]
+          updated_at: string
+          ward: string
+        }
+        Insert: {
+          address: string
+          agent_pro?: string | null
+          approved_by?: string | null
+          approved_date?: string | null
+          category_id: string
+          created_at?: string
+          customer_id: string
+          fee_paid?: number | null
+          id?: string
+          mobile_number: string
+          name: string
+          panchayath_id?: string | null
+          preference?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+          updated_at?: string
+          ward: string
+        }
+        Update: {
+          address?: string
+          agent_pro?: string | null
+          approved_by?: string | null
+          approved_date?: string | null
+          category_id?: string
+          created_at?: string
+          customer_id?: string
+          fee_paid?: number | null
+          id?: string
+          mobile_number?: string
+          name?: string
+          panchayath_id?: string | null
+          preference?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+          updated_at?: string
+          ward?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_panchayath_id_fkey"
+            columns: ["panchayath_id"]
+            isOneToOne: false
+            referencedRelation: "panchayaths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approval_logs: {
+        Row: {
+          approved_by: string
+          created_at: string | null
+          fee_collected: number | null
+          id: string
+          new_status: Database["public"]["Enums"]["application_status"]
+          previous_status:
+            | Database["public"]["Enums"]["application_status"]
+            | null
+          registration_id: string
+          remarks: string | null
+        }
+        Insert: {
+          approved_by: string
+          created_at?: string | null
+          fee_collected?: number | null
+          id?: string
+          new_status: Database["public"]["Enums"]["application_status"]
+          previous_status?:
+            | Database["public"]["Enums"]["application_status"]
+            | null
+          registration_id: string
+          remarks?: string | null
+        }
+        Update: {
+          approved_by?: string
+          created_at?: string | null
+          fee_collected?: number | null
+          id?: string
+          new_status?: Database["public"]["Enums"]["application_status"]
+          previous_status?:
+            | Database["public"]["Enums"]["application_status"]
+            | null
+          registration_id?: string
+          remarks?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_logs_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           created_at: string | null
@@ -440,6 +559,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_registration: {
+        Args: {
+          p_registration_id: string
+          p_admin_username: string
+          p_fee_collected?: number
+          p_remarks?: string
+        }
+        Returns: Json
+      }
       can_manage_admins: {
         Args: { user_role: string }
         Returns: boolean
@@ -448,9 +576,29 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_total_fees_collected: {
+        Args: { p_start_date?: string; p_end_date?: string }
+        Returns: number
+      }
       is_admin_context: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      reject_registration: {
+        Args: {
+          p_registration_id: string
+          p_admin_username: string
+          p_remarks?: string
+        }
+        Returns: Json
+      }
+      update_registration_status: {
+        Args: {
+          p_registration_id: string
+          p_status: Database["public"]["Enums"]["application_status"]
+          p_admin_username?: string
+        }
+        Returns: Json
       }
     }
     Enums: {
